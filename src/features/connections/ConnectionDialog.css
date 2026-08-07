@@ -1,0 +1,320 @@
+.connection-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  background: rgba(3, 7, 13, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.connection-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+
+  overflow: auto;
+
+  border: 1px solid #334155;
+  border-radius: 10px;
+
+  background: #101722;
+
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(148, 163, 184, 0.05);
+}
+
+.connection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 20px 22px 18px;
+
+  border-bottom: 1px solid #293241;
+}
+
+.connection-eyebrow {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #6f7d92;
+
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.connection-header h2 {
+  margin: 0;
+
+  color: #e2e8f0;
+
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+
+  border: 1px solid #303a4a;
+  border-radius: 6px;
+
+  color: #91a0b5;
+  background: #151d29;
+
+  font-size: 19px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  color: #e2e8f0;
+  background: #1d2735;
+}
+
+.connection-body {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  padding: 20px 22px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > span,
+.method-label {
+  color: #8a98ad;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+
+  border: 1px solid #303b4d;
+  border-radius: 6px;
+
+  outline: none;
+
+  color: #d8e0eb;
+  background: #0c121b;
+
+  font: inherit;
+  font-size: 12px;
+}
+
+.field input,
+.field select {
+  height: 38px;
+
+  padding: 0 11px;
+}
+
+.field textarea {
+  resize: vertical;
+
+  padding: 10px 11px;
+
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #60738e;
+
+  box-shadow: 0 0 0 2px rgba(96, 115, 142, 0.12);
+}
+
+.field small {
+  color: #637187;
+
+  font-size: 9px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 12px;
+}
+
+.method-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.method-options {
+  display: flex;
+  gap: 18px;
+}
+
+.method-options label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #a7b2c2;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+.method-options input {
+  accent-color: #8194b2;
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #59677c;
+
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: "";
+
+  flex: 1;
+  height: 1px;
+
+  background: #27303e;
+}
+
+.password-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}
+
+.password-field input {
+  border-radius: 6px 0 0 6px;
+}
+
+.password-field button {
+  padding: 0 11px;
+
+  border: 1px solid #303b4d;
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+
+  color: #8997aa;
+  background: #151d28;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+.password-field button:hover {
+  color: #d8e0eb;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding-top: 3px;
+
+  color: #738196;
+
+  font-size: 10px;
+}
+
+.status-indicator {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #68758a;
+}
+
+.status-indicator.warning {
+  background: #a58a62;
+}
+
+.connection-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+
+  padding: 14px 22px;
+
+  border-top: 1px solid #293241;
+
+  background: #0d141e;
+}
+
+.connection-footer button {
+  min-width: 90px;
+
+  padding: 8px 13px;
+
+  border-radius: 5px;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+.secondary-action {
+  border: 1px solid #344054;
+
+  color: #9aa7b9;
+  background: #151d29;
+}
+
+.secondary-action:hover:not(:disabled) {
+  color: #e1e7ef;
+  background: #1d2735;
+}
+
+.primary-action {
+  border: 1px solid #52657f;
+
+  color: #e7eef8;
+  background: #213047;
+}
+
+.connection-footer button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 620px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .method-options {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
