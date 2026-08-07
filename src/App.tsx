@@ -1537,17 +1537,29 @@ LIMIT ${settings.resultRowLimit};`,
         <div className="system-status">
           <span
             className={`status-dot ${
-              activeConnection
-                ? "online"
-                : "offline"
+              isPublicWebBuild
+                ? registryOverview && !registryError
+                  ? "online"
+                  : registryLoading
+                    ? "connecting"
+                    : "offline"
+                : activeConnection
+                  ? "online"
+                  : "offline"
             }`}
           />
 
-          {connecting
-            ? "CONNECTING..."
-            : activeConnection
-              ? activeConnection.name
-              : "NO CONNECTION"}
+          {isPublicWebBuild
+            ? registryLoading
+              ? "DATA MOON API CONNECTING..."
+              : registryOverview && !registryError
+                ? "DATA MOON API ONLINE"
+                : "DATA MOON API OFFLINE"
+            : connecting
+              ? "CONNECTING..."
+              : activeConnection
+                ? activeConnection.name
+                : "NO CONNECTION"}
         </div>
       </header>
 
@@ -1556,38 +1568,60 @@ LIMIT ${settings.resultRowLimit};`,
         <aside className="sidebar">
           <div className="sidebar-heading">
             <span>
-              CONNECTIONS
+              {isPublicWebBuild
+                ? "PUBLIC DATA ACCESS"
+                : "CONNECTIONS"}
             </span>
 
+            {!isPublicWebBuild && (
+              <button
+                type="button"
+                className="icon-button"
+                title="New connection"
+                onClick={
+                  openNewConnection
+                }
+              >
+                +
+              </button>
+            )}
+          </div>
+
+
+          {isPublicWebBuild ? (
+            <div className="public-api-access-card">
+              <span className="public-api-access-dot" />
+              <div>
+                <strong>Railway PostgreSQL</strong>
+                <span>Governed Read-Only API</span>
+                <small>
+                  {registryOverview && !registryError
+                    ? `${registryOverview.systems} active systems discovered`
+                    : registryLoading
+                      ? "Connecting to EES registry…"
+                      : "API connection unavailable"}
+                </small>
+              </div>
+            </div>
+          ) : (
             <button
               type="button"
-              className="icon-button"
-              title="New connection"
+              className="new-connection"
               onClick={
                 openNewConnection
               }
             >
-              +
+              <span>
+                ＋
+              </span>
+
+              New Connection
             </button>
-          </div>
+          )}
 
 
-          <button
-            type="button"
-            className="new-connection"
-            onClick={
-              openNewConnection
-            }
-          >
-            <span>
-              ＋
-            </span>
-
-            New Connection
-          </button>
-
-
-          {!activeConnection &&
+          {!isPublicWebBuild &&
+            !activeConnection &&
             savedConnections.length >
               0 && (
               <div className="saved-connections-list">
@@ -1647,7 +1681,40 @@ LIMIT ${settings.resultRowLimit};`,
             )}
 
 
-          {activeConnection &&
+          {isPublicWebBuild ? (
+            <div className="empty-connections public-api-summary">
+              <div className="empty-orbit">
+                ◉
+              </div>
+
+              <strong>
+                {registryOverview && !registryError
+                  ? "Data Moon API Online"
+                  : registryLoading
+                    ? "Connecting to Data Moon"
+                    : "Data Moon API Offline"}
+              </strong>
+
+              <span>
+                Railway PostgreSQL is exposed through the
+                governed EES API. Direct database credentials
+                are never sent to the public browser.
+              </span>
+
+              {registryOverview && (
+                <div className="public-api-mini-metrics">
+                  <span><b>{registryOverview.systems}</b> systems</span>
+                  <span><b>{registryOverview.datasets}</b> datasets</span>
+                </div>
+              )}
+
+              {registryError && (
+                <span className="connection-error">
+                  {registryError}
+                </span>
+              )}
+            </div>
+          ) : activeConnection &&
           catalog ? (
             <ConnectionExplorer
               connectionName={
@@ -2280,26 +2347,36 @@ LIMIT ${settings.resultRowLimit};`,
         <span>
           <span
             className={`status-dot ${
-              activeConnection
-                ? "online"
-                : "offline"
+              isPublicWebBuild
+                ? registryOverview && !registryError
+                  ? "online"
+                  : "offline"
+                : activeConnection
+                  ? "online"
+                  : "offline"
             }`}
           />
 
-          {activeConnection
-            ? `PostgreSQL: ${activeConnection.name}`
-            : "PostgreSQL: Disconnected"}
+          {isPublicWebBuild
+            ? registryOverview && !registryError
+              ? "Railway API: Online"
+              : "Railway API: Offline"
+            : activeConnection
+              ? `PostgreSQL: ${activeConnection.name}`
+              : "PostgreSQL: Disconnected"}
         </span>
 
         <span>
           EES Registry:{" "}
           {registryOverview
             ? `${registryOverview.systems} systems • ${registryOverview.datasets} datasets`
-            : "Loading"}
+            : registryLoading
+              ? "Loading"
+              : "Unavailable"}
         </span>
 
         <span>
-          Universal Data Moon v0.1.0
+          Universal Data Moon v1.0.0
         </span>
       </footer>
 
