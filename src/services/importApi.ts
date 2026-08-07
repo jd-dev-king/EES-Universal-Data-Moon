@@ -1,9 +1,7 @@
+import { API_BASE_URL } from "./apiBase";
 import type {
   DatabaseConnectionForm,
 } from "../features/connections/types";
-
-const API_BASE_URL =
-  "http://127.0.0.1:8000";
 
 export type CsvImportMode =
   | "create"

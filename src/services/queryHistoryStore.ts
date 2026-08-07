@@ -1,6 +1,6 @@
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { HybridStore } from "./hybridStore";
 
-const store = new LazyStore("query-history.json");
+const store = new HybridStore("query-history.json");
 
 const HISTORY_KEY = "query-history";
 const MAX_HISTORY = 250;

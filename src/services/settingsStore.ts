@@ -1,6 +1,6 @@
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { HybridStore } from "./hybridStore";
 
-const store = new LazyStore("settings.json");
+const store = new HybridStore("settings.json");
 
 const SETTINGS_KEY = "app-settings";
 

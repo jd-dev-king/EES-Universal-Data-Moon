@@ -1,6 +1,6 @@
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { HybridStore } from "./hybridStore";
 
-const store = new LazyStore("saved-queries.json");
+const store = new HybridStore("saved-queries.json");
 
 const SAVED_QUERIES_KEY = "saved-queries";
 

@@ -1639,3 +1639,18 @@ button {
 .settings-disabled {
   opacity: 0.55;
 }
+.public-web-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(67, 214, 255, 0.22);
+  background: rgba(4, 21, 34, 0.92);
+  color: #9ab1bd;
+  font-size: 12px;
+}
+.public-web-banner strong {
+  color: #54e2ff;
+  letter-spacing: .12em;
+  font-size: 10px;
+}

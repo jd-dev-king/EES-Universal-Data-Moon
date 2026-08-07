@@ -91,6 +91,9 @@ type ActiveView =
 
 
 function App() {
+  const isPublicWebBuild =
+    window.location.hostname.endsWith("github.io");
+
   /*
    * ------------------------------------------------------------
    * CONNECTIONS
@@ -261,7 +264,9 @@ FROM your_table;`,
     setActiveView,
   ] =
     useState<ActiveView>(
-      "query",
+      window.location.hostname.endsWith("github.io")
+        ? "systems"
+        : "query",
     );
 
 
@@ -1819,6 +1824,12 @@ LIMIT ${settings.resultRowLimit};`,
 
 
         <main className="main-workspace">
+          {isPublicWebBuild && (
+            <div className="public-web-banner">
+              <strong>PUBLIC DATA MOON</strong>
+              <span>Governed read-only EES catalog · live API when Railway is available</span>
+            </div>
+          )}
           {activeView ===
           "history" ? (
             <HistoryPanel

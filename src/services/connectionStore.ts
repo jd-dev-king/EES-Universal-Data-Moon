@@ -1,10 +1,10 @@
-import { LazyStore } from "@tauri-apps/plugin-store";
+import { HybridStore } from "./hybridStore";
 
 import type {
   DatabaseConnectionForm,
 } from "../features/connections/types";
 
-const store = new LazyStore("connections.json");
+const store = new HybridStore("connections.json");
 
 export interface SavedConnection {
   id: string;

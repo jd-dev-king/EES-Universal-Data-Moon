@@ -1,4 +1,4 @@
-# Secrets
+# Environment / secrets
 .env
 .env.*
 !.env.example
@@ -13,12 +13,8 @@ __pycache__/
 node_modules/
 dist/
 
-# Tauri / Rust
+# Rust / Tauri
 src-tauri/target/
-
-# IDE
-.vscode/
-.idea/
 
 # macOS
 .DS_Store
