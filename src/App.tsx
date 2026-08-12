@@ -29,11 +29,17 @@ import CsvImportDialog from "./features/imports/CsvImportDialog";
 import AiAssistant from "./features/ai/AiAssistant";
 
 import EesSystemsPanel from "./features/systems/EesSystemsPanel";
+import DocumentsPanel from "./features/documents/DocumentsPanel";
+import AdminLoginDialog from "./features/admin/AdminLoginDialog";
+import { adminLogout, getAdminSession, runManagedAdminQuery } from "./services/adminApi";
 
 import {
   loadObjectMetadata,
+  loadManagedObjectMetadata,
   loadPostgresCatalog,
+  loadManagedCatalog,
   runPostgresQuery,
+  runManagedQuery,
   type DatabaseCatalogResponse,
   type ObjectMetadataResponse,
   type QueryRunResponse,
@@ -82,17 +88,59 @@ import type {
 } from "./features/connections/types";
 
 
+type ResultView = "results" | "messages" | "explain";
+
 type ActiveView =
   | "query"
   | "history"
   | "savedQueries"
   | "systems"
+  | "documents"
   | "settings";
+
+
+const MANAGED_EES_CONNECTION: DatabaseConnectionForm = {
+  type: "postgresql",
+  method: "host",
+  name: "EES Data Platform",
+  host: "",
+  port: "5432",
+  database: "ees_data_platform",
+  username: "",
+  password: "",
+  connectionUrl: "",
+  sslMode: "require",
+};
 
 
 function App() {
   const isPublicWebBuild =
     window.location.hostname.endsWith("github.io");
+
+  const isLocalDev =
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1";
+
+  // Managed web mode also supports custom production domains.
+  const managedEesMode =
+    typeof window !== "undefined" &&
+    !("__TAURI_INTERNALS__" in window);
+
+  const [adminLoginOpen, setAdminLoginOpen] = useState(false);
+  const [adminUser, setAdminUser] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!managedEesMode) return;
+    void getAdminSession().then((session) => {
+      setAdminUser(session.authenticated ? (session.username ?? "admin") : null);
+    }).catch(() => setAdminUser(null));
+  }, [managedEesMode]);
+
+  async function handleAdminLogout() {
+    await adminLogout();
+    setAdminUser(null);
+    setQueryMessage("Admin session ended. Managed access is read-only.");
+  }
 
   /*
    * ------------------------------------------------------------
@@ -157,13 +205,108 @@ function App() {
    * ------------------------------------------------------------
    */
 
+  type QueryTab = {
+    id: number;
+    name: string;
+    sql: string;
+  };
+
+  const initialQuerySql = `SELECT *
+FROM your_table;`;
+
   const [
-    sql,
-    setSql,
-  ] = useState(
-    `SELECT *
-FROM your_table;`,
-  );
+    queryTabs,
+    setQueryTabs,
+  ] = useState<QueryTab[]>([
+    {
+      id: 1,
+      name: "query-1.sql",
+      sql: initialQuerySql,
+    },
+  ]);
+
+  const [
+    activeQueryTabId,
+    setActiveQueryTabId,
+  ] = useState(1);
+
+  const nextQueryTabIdRef = useRef(2);
+
+  const activeQueryTab =
+    queryTabs.find(
+      (tab) => tab.id === activeQueryTabId,
+    ) ?? queryTabs[0];
+
+  const sql = activeQueryTab?.sql ?? "";
+
+  function setSql(value: string) {
+    setQueryTabs((current) =>
+      current.map((tab) =>
+        tab.id === activeQueryTabId
+          ? { ...tab, sql: value }
+          : tab,
+      ),
+    );
+  }
+
+  function handleAddQueryTab() {
+    const id = nextQueryTabIdRef.current++;
+
+    setQueryTabs((current) => [
+      ...current,
+      {
+        id,
+        name: `query-${id}.sql`,
+        sql: "",
+      },
+    ]);
+
+    setActiveQueryTabId(id);
+    setQueryResult(null);
+    setQueryMessage(null);
+    closeObjectDetails();
+    setActiveView("query");
+  }
+
+  function handleSelectQueryTab(id: number) {
+    setActiveQueryTabId(id);
+    setQueryResult(null);
+    setQueryMessage(null);
+    closeObjectDetails();
+    setActiveView("query");
+  }
+
+  function handleCloseQueryTab(id: number) {
+    if (queryTabs.length === 1) {
+      setSql("");
+      setQueryResult(null);
+      setQueryMessage(null);
+      closeObjectDetails();
+      return;
+    }
+
+    const closingIndex = queryTabs.findIndex(
+      (tab) => tab.id === id,
+    );
+
+    const remaining = queryTabs.filter(
+      (tab) => tab.id !== id,
+    );
+
+    setQueryTabs(remaining);
+
+    if (id === activeQueryTabId) {
+      const fallbackIndex = Math.max(
+        0,
+        Math.min(closingIndex - 1, remaining.length - 1),
+      );
+
+      setActiveQueryTabId(remaining[fallbackIndex].id);
+      setQueryResult(null);
+      setQueryMessage(null);
+      closeObjectDetails();
+    }
+  }
 
   const [
     queryResult,
@@ -172,6 +315,11 @@ FROM your_table;`,
     useState<QueryRunResponse | null>(
       null,
     );
+
+  const [
+    resultView,
+    setResultView,
+  ] = useState<ResultView>("results");
 
   const [
     queryRunning,
@@ -268,6 +416,15 @@ FROM your_table;`,
         ? "systems"
         : "query",
     );
+
+  const [
+    documentsNavigation,
+    setDocumentsNavigation,
+  ] = useState<{
+    mode: "dashboard";
+    systemKey: string;
+    requestId: number;
+  } | null>(null);
 
 
   /*
@@ -496,6 +653,83 @@ FROM your_table;`,
 
 
   /*
+   * Automatically open the server-managed EES Data Platform
+   * whenever the public build or local development build is
+   * using managed EES mode. PostgreSQL credentials remain on
+   * the Data Moon API server and are never sent to the browser.
+   */
+
+  useEffect(() => {
+    if (!managedEesMode) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function connectManagedDatabase() {
+      setConnecting(true);
+      setConnectionError(null);
+
+      try {
+        const managedCatalog =
+          await loadManagedCatalog();
+
+        if (cancelled) {
+          return;
+        }
+
+        setActiveConnection(
+          MANAGED_EES_CONNECTION,
+        );
+
+        setCatalog(
+          managedCatalog,
+        );
+
+        setMetadataCache(
+          {},
+        );
+
+        metadataCacheRef.current =
+          {};
+
+        metadataRequestsRef.current.clear();
+
+        setConnectionError(null);
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        console.error(
+          "Managed EES database connection failed:",
+          error,
+        );
+
+        setActiveConnection(null);
+        setCatalog(null);
+
+        setConnectionError(
+          error instanceof Error
+            ? error.message
+            : "Unable to open EES Data Platform.",
+        );
+      } finally {
+        if (!cancelled) {
+          setConnecting(false);
+        }
+      }
+    }
+
+    void connectManagedDatabase();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [managedEesMode]);
+
+
+  /*
    * ------------------------------------------------------------
    * REGISTRY
    * ------------------------------------------------------------
@@ -567,9 +801,9 @@ FROM your_table;`,
       savedConnections.find(
         (connection) =>
           connection.method ===
-            "host" &&
+          "host" &&
           connection.database ===
-            system.primary_database,
+          system.primary_database,
       );
 
     if (saved) {
@@ -610,6 +844,27 @@ FROM your_table;`,
 
   /*
    * ------------------------------------------------------------
+   * EES SYSTEM -> DOCUMENT DASHBOARD
+   * ------------------------------------------------------------
+   */
+
+  function handleOpenSystemDashboard(
+    system: EesSystem,
+  ) {
+    setDocumentsNavigation({
+      mode: "dashboard",
+      systemKey: system.system_id,
+      requestId: Date.now(),
+    });
+
+    setActiveView(
+      "documents",
+    );
+  }
+
+
+  /*
+   * ------------------------------------------------------------
    * CONNECTION HANDLERS
    * ------------------------------------------------------------
    */
@@ -637,7 +892,7 @@ FROM your_table;`,
       ) {
         setConnectionError(
           catalogResult.message ??
-            "Unable to load database catalog.",
+          "Unable to load database catalog.",
         );
 
         return;
@@ -676,16 +931,16 @@ FROM your_table;`,
 
           return exists
             ? current.map(
-                (item) =>
-                  item.id ===
+              (item) =>
+                item.id ===
                   saved.id
-                    ? saved
-                    : item,
-              )
+                  ? saved
+                  : item,
+            )
             : [
-                ...current,
-                saved,
-              ];
+              ...current,
+              saved,
+            ];
         },
       );
 
@@ -752,6 +1007,42 @@ FROM your_table;`,
     );
   }
 
+  async function openManagedEesPlatform() {
+    setConnecting(true);
+    setConnectionError(null);
+
+    try {
+      const managedCatalog =
+        await loadManagedCatalog();
+
+      setActiveConnection(
+        MANAGED_EES_CONNECTION,
+      );
+
+      setCatalog(
+        managedCatalog,
+      );
+
+      setConnectionError(null);
+    } catch (error) {
+      console.error(
+        "Unable to open managed EES Data Platform:",
+        error,
+      );
+
+      setActiveConnection(null);
+      setCatalog(null);
+
+      setConnectionError(
+        error instanceof Error
+          ? error.message
+          : "Unable to connect to EES Data Platform.",
+      );
+    } finally {
+      setConnecting(false);
+    }
+  }
+
 
   /*
    * ------------------------------------------------------------
@@ -781,7 +1072,7 @@ FROM your_table;`,
 
         const cached =
           metadataCacheRef.current[
-            cacheKey
+          cacheKey
           ];
 
         if (
@@ -804,12 +1095,21 @@ FROM your_table;`,
         const request =
           (async () => {
             try {
+              const isManagedConnection =
+                activeConnection.name ===
+                MANAGED_EES_CONNECTION.name;
+
               const result =
-                await loadObjectMetadata(
-                  activeConnection,
-                  schemaName,
-                  objectName,
-                );
+                isManagedConnection
+                  ? await loadManagedObjectMetadata(
+                    schemaName,
+                    objectName,
+                  )
+                  : await loadObjectMetadata(
+                    activeConnection,
+                    schemaName,
+                    objectName,
+                  );
 
               if (
                 !result.success
@@ -818,12 +1118,12 @@ FROM your_table;`,
               }
 
               metadataCacheRef.current =
-                {
-                  ...metadataCacheRef.current,
+              {
+                ...metadataCacheRef.current,
 
-                  [cacheKey]:
-                    result,
-                };
+                [cacheKey]:
+                  result,
+              };
 
               setMetadataCache(
                 (current) => ({
@@ -972,15 +1272,29 @@ FROM your_table;`,
         null,
       );
 
+      const isManagedConnection =
+        activeConnection.name === MANAGED_EES_CONNECTION.name;
+
       const result =
-        await runPostgresQuery(
-          activeConnection,
-          sql,
-        );
+        isManagedConnection
+          ? adminUser
+            ? await runManagedAdminQuery(
+              sql,
+              settings.resultRowLimit,
+            )
+            : await runManagedQuery(
+              sql,
+              settings.resultRowLimit,
+            )
+          : await runPostgresQuery(
+            activeConnection,
+            sql,
+          );
 
       setQueryResult(
         result,
       );
+      setResultView("results");
 
       const historyEntry =
         await addQueryHistory({
@@ -1023,7 +1337,7 @@ FROM your_table;`,
       ) {
         setQueryMessage(
           result.message ??
-            "Query execution failed.",
+          "Query execution failed.",
         );
       } else {
         setQueryMessage(
@@ -1230,11 +1544,11 @@ LIMIT ${settings.resultRowLimit};`,
           sql,
 
           activeConnection?.name ??
-            null,
+          null,
 
           catalog?.database ??
-            activeConnection?.database ??
-            null,
+          activeConnection?.database ??
+          null,
         );
 
       setSavedQueries(
@@ -1248,16 +1562,16 @@ LIMIT ${settings.resultRowLimit};`,
 
           return exists
             ? current.map(
-                (query) =>
-                  query.id ===
+              (query) =>
+                query.id ===
                   saved.id
-                    ? saved
-                    : query,
-              )
+                  ? saved
+                  : query,
+            )
             : [
-                saved,
-                ...current,
-              ];
+              saved,
+              ...current,
+            ];
         },
       );
 
@@ -1406,7 +1720,7 @@ LIMIT ${settings.resultRowLimit};`,
       ) {
         setQueryMessage(
           refreshed.message ??
-            "CSV imported, but the database catalog could not be refreshed.",
+          "CSV imported, but the database catalog could not be refreshed.",
         );
 
         return;
@@ -1516,8 +1830,11 @@ LIMIT ${settings.resultRowLimit};`,
    */
 
   return (
+
     <div className="app-shell">
       <header className="titlebar">
+
+
         <div className="brand">
           <span className="moon-mark">
             ◐
@@ -1534,22 +1851,47 @@ LIMIT ${settings.resultRowLimit};`,
           </div>
         </div>
 
+        <span>{managedEesMode && (
+          adminUser ? (
+            <button
+              type="button"
+              className="titlebar-admin-button authenticated"
+              onClick={handleAdminLogout}
+              title="Sign out of Data Moon Admin Mode"
+            >
+              <span className="titlebar-admin-dot" />
+              Admin: {adminUser}
+              <span className="titlebar-admin-action">
+                Sign Out
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="titlebar-admin-button"
+              onClick={() => setAdminLoginOpen(true)}
+              title="Sign in to Data Moon Admin Mode"
+            >
+              Admin Login
+            </button>
+          )
+        )}</span>
+
         <div className="system-status">
           <span
-            className={`status-dot ${
-              isPublicWebBuild
-                ? registryOverview && !registryError
-                  ? "online"
-                  : registryLoading
-                    ? "connecting"
-                    : "offline"
-                : activeConnection
-                  ? "online"
+            className={`status-dot ${managedEesMode
+              ? registryOverview && !registryError
+                ? "online"
+                : registryLoading
+                  ? "connecting"
                   : "offline"
-            }`}
+              : activeConnection
+                ? "online"
+                : "offline"
+              }`}
           />
 
-          {isPublicWebBuild
+          {managedEesMode
             ? registryLoading
               ? "DATA MOON API CONNECTING..."
               : registryOverview && !registryError
@@ -1577,7 +1919,7 @@ LIMIT ${settings.resultRowLimit};`,
               <button
                 type="button"
                 className="icon-button"
-                title="New connection"
+                title="New Private Database Connection"
                 onClick={
                   openNewConnection
                 }
@@ -1588,42 +1930,51 @@ LIMIT ${settings.resultRowLimit};`,
           </div>
 
 
-          {isPublicWebBuild ? (
-            <div className="public-api-access-card">
+          {managedEesMode && (
+            <button
+              type="button"
+              className="public-api-access-card"
+              onClick={openManagedEesPlatform}
+              disabled={connecting}
+              title="Explore the managed EES Data Platform"
+            >
               <span className="public-api-access-dot" />
+
               <div>
-                <strong>Railway PostgreSQL</strong>
-                <span>Governed Read-Only API</span>
+                <strong>EES Data Platform</strong>
+
+                <span>
+                  PostgreSQL · Managed Connection
+                </span>
+
                 <small>
-                  {registryOverview && !registryError
-                    ? `${registryOverview.systems} active systems discovered`
-                    : registryLoading
-                      ? "Connecting to EES registry…"
-                      : "API connection unavailable"}
+                  {connecting
+                    ? "Connecting…"
+                    : activeConnection && catalog
+                      ? "ees_data_platform · Read-only · Connected"
+                      : registryOverview && !registryError
+                        ? "API online · Open managed database"
+                        : "API connection unavailable"}
                 </small>
               </div>
-            </div>
-          ) : (
+            </button>
+          )}
+
+          {isLocalDev && (
             <button
               type="button"
               className="new-connection"
-              onClick={
-                openNewConnection
-              }
+              onClick={openNewConnection}
             >
-              <span>
-                ＋
-              </span>
-
-              New Connection
+              <span>＋</span>
+              Private Database Connection
             </button>
           )}
 
 
-          {!isPublicWebBuild &&
-            !activeConnection &&
-            savedConnections.length >
-              0 && (
+
+          {isLocalDev &&
+            savedConnections.length > 0 && (
               <div className="saved-connections-list">
                 <div className="saved-connections-title">
                   SAVED
@@ -1659,7 +2010,7 @@ LIMIT ${settings.resultRowLimit};`,
 
                         <span>
                           {connection.method ===
-                          "host"
+                            "host"
                             ? `${connection.host}:${connection.port}`
                             : "PostgreSQL URL"}
                         </span>
@@ -1680,20 +2031,21 @@ LIMIT ${settings.resultRowLimit};`,
               </div>
             )}
 
-
-          {isPublicWebBuild ? (
+          {managedEesMode && !activeConnection ? (
             <div className="empty-connections public-api-summary">
               <div className="empty-orbit">
                 ◉
               </div>
 
               <strong>
+
                 {registryOverview && !registryError
                   ? "Data Moon API Online"
                   : registryLoading
                     ? "Connecting to Data Moon"
                     : "Data Moon API Offline"}
               </strong>
+
 
               <span>
                 Railway PostgreSQL is exposed through the
@@ -1715,7 +2067,7 @@ LIMIT ${settings.resultRowLimit};`,
               )}
             </div>
           ) : activeConnection &&
-          catalog ? (
+            catalog ? (
             <ConnectionExplorer
               connectionName={
                 activeConnection.name
@@ -1769,12 +2121,11 @@ LIMIT ${settings.resultRowLimit};`,
             <button
               type="button"
 
-              className={`nav-item ${
-                activeView ===
+              className={`nav-item ${activeView ===
                 "query"
-                  ? "active"
-                  : ""
-              }`}
+                ? "active"
+                : ""
+                }`}
 
               onClick={() =>
                 setActiveView(
@@ -1793,12 +2144,11 @@ LIMIT ${settings.resultRowLimit};`,
             <button
               type="button"
 
-              className={`nav-item ${
-                activeView ===
+              className={`nav-item ${activeView ===
                 "history"
-                  ? "active"
-                  : ""
-              }`}
+                ? "active"
+                : ""
+                }`}
 
               onClick={() =>
                 setActiveView(
@@ -1817,12 +2167,11 @@ LIMIT ${settings.resultRowLimit};`,
             <button
               type="button"
 
-              className={`nav-item ${
-                activeView ===
+              className={`nav-item ${activeView ===
                 "savedQueries"
-                  ? "active"
-                  : ""
-              }`}
+                ? "active"
+                : ""
+                }`}
 
               onClick={() =>
                 setActiveView(
@@ -1841,12 +2190,11 @@ LIMIT ${settings.resultRowLimit};`,
             <button
               type="button"
 
-              className={`nav-item ${
-                activeView ===
+              className={`nav-item ${activeView ===
                 "systems"
-                  ? "active"
-                  : ""
-              }`}
+                ? "active"
+                : ""
+                }`}
 
               onClick={() => {
                 setActiveView(
@@ -1866,13 +2214,33 @@ LIMIT ${settings.resultRowLimit};`,
 
             <button
               type="button"
+              className={`nav-item ${activeView ===
+                "documents"
+                ? "active"
+                : ""
+                }`}
+              onClick={() =>
+                setActiveView(
+                  "documents",
+                )
+              }
+            >
+              <span>
+                ◫
+              </span>
 
-              className={`nav-item ${
-                activeView ===
+              Documents
+            </button>
+
+
+            <button
+              type="button"
+
+              className={`nav-item ${activeView ===
                 "settings"
-                  ? "active"
-                  : ""
-              }`}
+                ? "active"
+                : ""
+                }`}
 
               onClick={() =>
                 setActiveView(
@@ -1898,7 +2266,7 @@ LIMIT ${settings.resultRowLimit};`,
             </div>
           )}
           {activeView ===
-          "history" ? (
+            "history" ? (
             <HistoryPanel
               entries={
                 queryHistory
@@ -1957,6 +2325,17 @@ LIMIT ${settings.resultRowLimit};`,
               onOpenDatabase={
                 handleOpenSystemDatabase
               }
+
+              onOpenDashboard={
+                handleOpenSystemDashboard
+              }
+            />
+          ) : activeView ===
+            "documents" ? (
+            <DocumentsPanel
+              adminUser={adminUser}
+              navigationRequest={documentsNavigation}
+              systems={eesSystems}
             />
           ) : activeView ===
             "settings" ? (
@@ -1976,23 +2355,42 @@ LIMIT ${settings.resultRowLimit};`,
           ) : (
             <>
               <div className="query-tabs">
-                <button
-                  type="button"
-                  className="query-tab active"
-                >
-                  <span className="tab-status" />
+                {queryTabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    className={
+                      tab.id === activeQueryTabId
+                        ? "query-tab active"
+                        : "query-tab"
+                    }
+                    onClick={() =>
+                      handleSelectQueryTab(tab.id)
+                    }
+                  >
+                    <span className="tab-status" />
 
-                  query-1.sql
+                    {tab.name}
 
-                  <span className="tab-close">
-                    ×
-                  </span>
-                </button>
+                    <span
+                      className="tab-close"
+                      aria-label={`Close ${tab.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCloseQueryTab(tab.id);
+                      }}
+                    >
+                      ×
+                    </span>
+                  </button>
+                ))}
 
                 <button
                   type="button"
                   className="add-tab"
                   title="New query"
+                  aria-label="New query"
+                  onClick={handleAddQueryTab}
                 >
                   +
                 </button>
@@ -2094,15 +2492,19 @@ LIMIT ${settings.resultRowLimit};`,
                 <div className="query-context">
                   PostgreSQL
 
+                  {adminUser && activeConnection?.name === MANAGED_EES_CONNECTION.name && (
+                    <strong title="Authenticated managed administration"> · ADMIN MODE</strong>
+                  )}
+
                   <span>
                     •
                   </span>
 
                   {activeConnection
                     ? (
-                        catalog?.database ??
-                        activeConnection.database
-                      )
+                      catalog?.database ??
+                      activeConnection.database
+                    )
                     : "No database selected"}
                 </div>
               </div>
@@ -2145,19 +2547,24 @@ LIMIT ${settings.resultRowLimit};`,
                 <div className="result-tabs">
                   <button
                     type="button"
-                    className="active"
+                    className={resultView === "results" ? "active" : ""}
+                    onClick={() => setResultView("results")}
                   >
                     Results
                   </button>
 
                   <button
                     type="button"
+                    className={resultView === "messages" ? "active" : ""}
+                    onClick={() => setResultView("messages")}
                   >
                     Messages
                   </button>
 
                   <button
                     type="button"
+                    className={resultView === "explain" ? "active" : ""}
+                    onClick={() => setResultView("explain")}
                   >
                     Explain
                   </button>
@@ -2169,97 +2576,78 @@ LIMIT ${settings.resultRowLimit};`,
                   </span>
                 </div>
 
-
-                {queryResult?.success &&
-                queryResult.columns
-                  .length > 0 ? (
-                  <div className="results-table-wrap">
-                    <table className="results-table">
-                      <thead>
-                        <tr>
-                          {queryResult.columns.map(
-                            (
-                              column,
-                            ) => (
-                              <th
-                                key={
-                                  column
-                                }
-                              >
-                                {
-                                  column
-                                }
-                              </th>
-                            ),
-                          )}
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {queryResult.rows.map(
-                          (
-                            row,
-                            rowIndex,
-                          ) => (
-                            <tr
-                              key={
-                                rowIndex
-                              }
-                            >
-                              {row.map(
-                                (
-                                  value,
-                                  columnIndex,
-                                ) => (
-                                  <td
-                                    key={`${rowIndex}-${columnIndex}`}
-                                  >
-                                    {value ===
-                                    null
-                                      ? "NULL"
-                                      : String(
-                                          value,
-                                        )}
-                                  </td>
-                                ),
-                              )}
+                {resultView === "results" ? (
+                  queryResult?.success && queryResult.columns.length > 0 ? (
+                    <div className="results-table-wrap">
+                      <table className="results-table">
+                        <thead>
+                          <tr>
+                            {queryResult.columns.map((column) => (
+                              <th key={column}>{column}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {queryResult.rows.map((row, rowIndex) => (
+                            <tr key={rowIndex}>
+                              {row.map((value, columnIndex) => (
+                                <td key={`${rowIndex}-${columnIndex}`}>
+                                  {value === null ? "NULL" : String(value)}
+                                </td>
+                              ))}
                             </tr>
-                          ),
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : queryMessage ? (
-                  <div
-                    className={
-                      queryResult?.success ===
-                      false
-                        ? "query-message error"
-                        : "query-message"
-                    }
-                  >
-                    {
-                      queryMessage
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : queryMessage ? (
+                    <div className={queryResult?.success === false ? "query-message error" : "query-message"}>
+                      {queryMessage}
+                    </div>
+                  ) : (
+                    <div className="results-empty">
+                      <div className="results-icon">⌁</div>
+                      <strong>No query results</strong>
+                      <span>Run a SQL query to view data here.</span>
+                    </div>
+                  )
+                ) : resultView === "messages" ? (
+                  <div className={queryResult?.success === false ? "query-message error" : "query-message"}>
+                    {queryResult ? (
+                      <>
+                        <strong>{queryResult.success ? "Query completed successfully." : "Query failed."}</strong>
+                        <br />
+                        {queryResult.message ? <><span>{queryResult.message}</span><br /></> : null}
+                        <span>Rows affected / returned: {queryResult.row_count}</span>
+                        <br />
+                        <span>Duration: {queryResult.duration_ms} ms</span>
+                        {Array.isArray((queryResult as any).results) ? (
+                          <>
+                            <br /><br />
+                            <strong>{(queryResult as any).statements_executed ?? (queryResult as any).results.length} statements executed</strong>
+                            {(queryResult as any).total_affected != null ? <><br /><span>Total affected rows: {(queryResult as any).total_affected}</span></> : null}
+                            {(queryResult as any).results.map((item: any, index: number) => (
+                              <div key={index} style={{ marginTop: "10px" }}>
+                                <strong>{index + 1}. {item.command ?? item.statement_type ?? "SQL statement"}</strong>
+                                <br />
+                                <span>{item.row_count ?? item.affected ?? 0} rows affected / returned</span>
+                                {item.message ? <><br /><span>{String(item.message)}</span></> : null}
+                              </div>
+                            ))}
+                          </>
+                        ) : null}
+                      </>
+                    ) : queryMessage ? queryMessage : "Run a query to view execution messages."
                     }
                   </div>
                 ) : (
                   <div className="results-empty">
-                    <div className="results-icon">
-                      ⌁
-                    </div>
-
-                    <strong>
-                      No query results
-                    </strong>
-
-                    <span>
-                      Run a SQL query to
-                      view data here.
-                    </span>
+                    <div className="results-icon">⌁</div>
+                    <strong>Explain query plan</strong>
+                    <span>Run an EXPLAIN or EXPLAIN ANALYZE statement to inspect the PostgreSQL execution plan.</span>
                   </div>
                 )}
               </section>
-
 
               {selectedObject &&
                 (
@@ -2317,9 +2705,9 @@ LIMIT ${settings.resultRowLimit};`,
                 databaseName={
                   activeConnection
                     ? (
-                        catalog?.database ??
-                        activeConnection.database
-                      )
+                      catalog?.database ??
+                      activeConnection.database
+                    )
                     : null
                 }
 
@@ -2346,21 +2734,24 @@ LIMIT ${settings.resultRowLimit};`,
       <footer className="statusbar">
         <span>
           <span
-            className={`status-dot ${
-              isPublicWebBuild
-                ? registryOverview && !registryError
-                  ? "online"
+            className={`status-dot ${managedEesMode
+              ? activeConnection && catalog
+                ? "online"
+                : registryOverview && !registryError
+                  ? "connecting"
                   : "offline"
-                : activeConnection
-                  ? "online"
-                  : "offline"
-            }`}
+              : activeConnection
+                ? "online"
+                : "offline"
+              }`}
           />
 
-          {isPublicWebBuild
-            ? registryOverview && !registryError
-              ? "Railway API: Online"
-              : "Railway API: Offline"
+          {managedEesMode
+            ? activeConnection && catalog
+              ? "PostgreSQL: EES Data Platform · Connected"
+              : registryOverview && !registryError
+                ? "Railway API: Online · Database Connecting"
+                : "Railway API: Offline"
             : activeConnection
               ? `PostgreSQL: ${activeConnection.name}`
               : "PostgreSQL: Disconnected"}
@@ -2380,6 +2771,15 @@ LIMIT ${settings.resultRowLimit};`,
         </span>
       </footer>
 
+
+      <AdminLoginDialog
+        open={adminLoginOpen}
+        onClose={() => setAdminLoginOpen(false)}
+        onAuthenticated={(username) => {
+          setAdminUser(username);
+          setQueryMessage("Authenticated admin mode enabled for EES Data Platform.");
+        }}
+      />
 
       <ConnectionDialog
         open={

@@ -9,7 +9,6 @@ from psycopg import sql
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api", tags=["data-moon-public"])
-
 MAX_ROWS = int(os.getenv("DATA_MOON_MAX_ROWS", "500"))
 FORBIDDEN = re.compile(
     r"\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|copy|call|do|vacuum|analyze|refresh|reindex|cluster)\b",
@@ -76,14 +75,16 @@ def public_health():
 def schemas():
     with psycopg.connect(database_url()) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT schema_name
                 FROM information_schema.schemata
                 WHERE schema_name NOT IN ('pg_catalog', 'information_schema')
                   AND schema_name NOT LIKE 'pg_toast%%'
                   AND schema_name NOT LIKE 'pg_temp_%%'
                 ORDER BY schema_name
-            """)
+                """
+            )
             return {"schemas": [row[0] for row in cur.fetchall()]}
 
 
@@ -91,12 +92,15 @@ def schemas():
 def tables(schema_name: str):
     with psycopg.connect(database_url()) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT table_name, table_type
                 FROM information_schema.tables
                 WHERE table_schema = %s
                 ORDER BY table_type, table_name
-            """, (schema_name,))
+                """,
+                (schema_name,),
+            )
             objects = [{"name": r[0], "type": r[1]} for r in cur.fetchall()]
     return {"schema": schema_name, "tables": objects}
 
@@ -105,12 +109,15 @@ def tables(schema_name: str):
 def columns(schema_name: str, table_name: str):
     with psycopg.connect(database_url()) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 SELECT column_name, data_type, is_nullable, column_default, ordinal_position
                 FROM information_schema.columns
                 WHERE table_schema = %s AND table_name = %s
                 ORDER BY ordinal_position
-            """, (schema_name, table_name))
+                """,
+                (schema_name, table_name),
+            )
             rows = [
                 {
                     "name": r[0],
@@ -124,6 +131,88 @@ def columns(schema_name: str, table_name: str):
     if not rows:
         raise HTTPException(status_code=404, detail="Table or view not found.")
     return {"schema": schema_name, "table": table_name, "columns": rows}
+
+
+@router.get("/catalog/{schema_name}/{table_name}/metadata")
+def object_metadata(schema_name: str, table_name: str):
+    """Return read-only object metadata using the server-managed DATABASE_URL."""
+    with psycopg.connect(database_url()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT column_name, data_type, is_nullable, column_default, ordinal_position
+                FROM information_schema.columns
+                WHERE table_schema = %s AND table_name = %s
+                ORDER BY ordinal_position
+                """,
+                (schema_name, table_name),
+            )
+            columns = [
+                {
+                    "name": row[0],
+                    "data_type": row[1],
+                    "nullable": row[2] == "YES",
+                    "default": row[3],
+                    "position": row[4],
+                    "primary_key": False,
+                }
+                for row in cur.fetchall()
+            ]
+
+            if not columns:
+                raise HTTPException(status_code=404, detail="Table or view not found.")
+
+            cur.execute(
+                """
+                SELECT kcu.column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                 AND tc.constraint_schema = kcu.constraint_schema
+                WHERE tc.constraint_type = 'PRIMARY KEY'
+                  AND tc.table_schema = %s
+                  AND tc.table_name = %s
+                ORDER BY kcu.ordinal_position
+                """,
+                (schema_name, table_name),
+            )
+            primary_keys = {row[0] for row in cur.fetchall()}
+            for column in columns:
+                column["primary_key"] = column["name"] in primary_keys
+
+            cur.execute(
+                """
+                SELECT indexname, indexdef
+                FROM pg_indexes
+                WHERE schemaname = %s AND tablename = %s
+                ORDER BY indexname
+                """,
+                (schema_name, table_name),
+            )
+            indexes = [
+                {"name": row[0], "definition": row[1]}
+                for row in cur.fetchall()
+            ]
+
+            cur.execute(
+                """
+                SELECT table_type
+                FROM information_schema.tables
+                WHERE table_schema = %s AND table_name = %s
+                """,
+                (schema_name, table_name),
+            )
+            object_row = cur.fetchone()
+            object_type = object_row[0] if object_row else "VIEW"
+
+    return {
+        "success": True,
+        "schema": schema_name,
+        "name": table_name,
+        "object_type": object_type,
+        "columns": columns,
+        "indexes": indexes,
+    }
 
 
 @router.get("/catalog/{schema_name}/{table_name}/count")
@@ -166,7 +255,10 @@ def read_only_query(request: ReadOnlyQueryRequest):
     started = time.perf_counter()
     wrapped = f"SELECT * FROM ({statement}) AS data_moon_query LIMIT {request.limit}"
     try:
-        with psycopg.connect(database_url(), options="-c default_transaction_read_only=on") as conn:
+        with psycopg.connect(
+            database_url(),
+            options="-c default_transaction_read_only=on",
+        ) as conn:
             with conn.cursor() as cur:
                 cur.execute(wrapped)
                 columns = [d.name for d in cur.description] if cur.description else []

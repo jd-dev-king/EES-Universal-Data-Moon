@@ -96,6 +96,59 @@ button {
   letter-spacing: 0.08em;
 }
 
+.titlebar-admin-button {
+  min-height: 28px;
+  padding: 2px 5px;
+  font: inherit;
+  font-size: 0.60rem;
+  letter-spacing: 0.03em;
+  border-radius: 1px;
+  background: rgba(15, 28, 43, 0.98);
+  border-color: rgba(3, 48, 67, 0.75);
+  color: #cfdbe7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.titlebar-admin-button:hover {
+  background: rgba(27, 43, 63, 0.98);
+  border-color: rgba(79, 171, 211, 0.75);
+  color: #cfdbe7;
+}
+
+.titlebar-admin-button.authenticated {
+  border-color: rgba(63, 188, 131, 0.55);
+  background: rgba(13, 53, 46, 0.82);
+  min-width: 120px;
+  color: #cfdbe7;
+}
+
+.titlebar-admin-button.authenticated:hover {
+  border-color: rgba(79, 218, 154, 0.8);
+  background: rgba(16, 67, 57, 0.95);
+  color: #cfdbe7;
+}
+
+.titlebar-admin-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #65d69a;
+  box-shadow: 0 0 8px rgba(101, 214, 154, 0.7);
+}
+
+.titlebar-admin-action {
+  opacity: 0.65;
+  font-weight: 500;
+}
+
+.titlebar-admin-button:focus-visible {
+  outline: 2px solid rgba(85, 190, 220, 0.8);
+  outline-offset: 2px;
+}
+
 /* WORKSPACE */
 
 .workspace {
@@ -145,9 +198,14 @@ button {
 }
 
 .new-connection {
+  font: inherit;
+  font-size: 0.70rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 
   margin: 0 10px;
   padding: 9px 10px;
@@ -229,6 +287,7 @@ button {
   color: #d5dce7;
   background: #182131;
 }
+
 
 /* MAIN WORKSPACE */
 

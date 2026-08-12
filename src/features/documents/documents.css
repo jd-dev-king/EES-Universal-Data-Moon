@@ -1,0 +1,1353 @@
+.documents-workspace {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--bg-primary, #071018);
+    color: inherit
+}
+
+.documents-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(120, 210, 255, .13)
+}
+
+.documents-header h2 {
+    margin: 4px 0 5px;
+    font-size: 18px
+}
+
+.documents-header p {
+    margin: 0;
+    max-width: 760px;
+    font-size: 12px;
+    opacity: .62
+}
+
+.documents-kicker,
+.documents-section-title {
+    font-size: 10px;
+    letter-spacing: .14em;
+    opacity: .58
+}
+
+.documents-mode {
+    font-size: 10px;
+    letter-spacing: .08em;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    opacity: .8
+}
+
+.documents-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #36e7a5;
+    box-shadow: 0 0 8px rgba(54, 231, 165, .8)
+}
+
+.documents-grid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr) 330px;
+    min-height: 0;
+    flex: 1
+}
+
+.documents-collections,
+.document-details {
+    min-height: 0;
+    overflow: auto;
+    border-right: 1px solid rgba(120, 210, 255, .1);
+    padding: 12px
+}
+
+.document-details {
+    border-right: 0;
+    border-left: 1px solid rgba(120, 210, 255, .1)
+}
+
+.documents-section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 5px 10px
+}
+
+.documents-section-title button {
+    background: none;
+    border: 0;
+    color: inherit;
+    cursor: pointer
+}
+
+.documents-collection {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    align-items: center;
+    text-align: left;
+    gap: 5px;
+    padding: 9px 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px
+}
+
+.documents-collection:hover,
+.documents-collection.active {
+    background: rgba(70, 180, 255, .08);
+    border-color: rgba(70, 180, 255, .18)
+}
+
+.documents-collection small {
+    opacity: .55
+}
+
+.documents-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0
+}
+
+.documents-querybar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(120, 210, 255, .1)
+}
+
+.documents-querybar>div {
+    display: flex;
+    flex-direction: column;
+    margin-right: auto
+}
+
+.documents-querybar span {
+    font-size: 10px;
+    opacity: .5
+}
+
+.documents-querybar button {
+    font: inherit;
+    font-size: 11px;
+    padding: 6px 10px
+}
+
+.documents-run {
+    font-weight: 700
+}
+
+.documents-filter {
+    height: 105px;
+    resize: vertical;
+    border: 0;
+    border-bottom: 1px solid rgba(120, 210, 255, .1);
+    background: rgba(0, 0, 0, .16);
+    color: inherit;
+    padding: 12px;
+    font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+    outline: none
+}
+
+.documents-results-heading {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 12px;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(120, 210, 255, .1)
+}
+
+.documents-results-heading span {
+    opacity: .55
+}
+
+.documents-results {
+    overflow: auto;
+    min-height: 0;
+    flex: 1
+}
+
+.document-row {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    border-bottom: 1px solid rgba(120, 210, 255, .08);
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    cursor: pointer
+}
+
+.document-row:hover,
+.document-row.active {
+    background: rgba(70, 180, 255, .06)
+}
+
+.document-row pre,
+.document-details pre {
+    margin: 0;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font: 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace
+}
+
+.document-index {
+    padding: 12px 8px;
+    font-size: 10px;
+    opacity: .4;
+    text-align: right
+}
+
+.documents-empty,
+.documents-muted {
+    padding: 20px 12px;
+    font-size: 11px;
+    opacity: .5
+}
+
+.documents-error {
+    margin: 8px 12px;
+    padding: 9px 10px;
+    border: 1px solid rgba(255, 100, 100, .28);
+    font-size: 11px;
+    background: rgba(255, 80, 80, .07)
+}
+
+@media(max-width:1050px) {
+    .documents-grid {
+        grid-template-columns: 190px minmax(0, 1fr)
+    }
+
+    .document-details {
+        display: none
+    }
+}
+
+@media(max-width:720px) {
+    .documents-grid {
+        grid-template-columns: 1fr
+    }
+
+    .documents-collections {
+        max-height: 180px;
+        border-right: 0;
+        border-bottom: 1px solid rgba(120, 210, 255, .1)
+    }
+
+    .documents-header {
+        padding: 14px;
+        flex-direction: column
+    }
+
+    .documents-header p {
+        display: none
+    }
+}
+
+
+/* Data Moon theme overrides for document controls only. */
+.documents-querybar button {
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 5px;
+    background: #142033;
+    color: inherit;
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.documents-querybar button:hover:not(:disabled) {
+    background: #1a2a40;
+    border-color: rgba(74, 168, 210, .78);
+}
+
+.documents-querybar button:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+.documents-run {
+    font-weight: 700;
+}
+
+.documents-filter {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 105px;
+    max-height: 260px;
+    background: #171717;
+}
+
+.documents-filter:focus {
+    box-shadow: inset 0 0 0 1px rgba(62, 154, 194, .45);
+}
+
+.documents-icon-button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: .7;
+}
+
+.documents-icon-button:hover { opacity: 1; }
+.documents-icon-button:disabled { opacity: .3; cursor: default; }
+
+/* ---------------------------------------------------------
+   Stable Data Moon document-workspace sizing override
+   --------------------------------------------------------- */
+.documents-workspace {
+    height: calc(100vh - 90px);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.documents-grid {
+    flex: 1 1 auto;
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+    grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr) minmax(340px, 420px);
+}
+
+.documents-collections,
+.documents-main,
+.document-details {
+    min-width: 0;
+    min-height: 0;
+}
+
+.documents-collections,
+.document-details {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.documents-main {
+    height: 100%;
+    overflow: hidden;
+}
+
+.documents-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+@media (max-width: 1200px) {
+    .documents-grid {
+        grid-template-columns: 220px minmax(360px, 1fr) 300px;
+    }
+}
+
+/* ---------------------------------------------------------
+   Authenticated MongoDB admin CRUD controls
+   --------------------------------------------------------- */
+.documents-admin-action {
+    border-color: rgba(54, 231, 165, .42) !important;
+    background: rgba(20, 73, 60, .56) !important;
+}
+
+.documents-admin-action:hover:not(:disabled) {
+    border-color: rgba(54, 231, 165, .72) !important;
+    background: rgba(24, 91, 73, .72) !important;
+}
+
+.documents-details-title {
+    gap: 8px;
+}
+
+.documents-details-actions {
+    display: inline-flex;
+    gap: 6px;
+}
+
+.documents-details-actions button,
+.documents-editor-actions button,
+.documents-delete-confirm button {
+    min-height: 28px;
+    padding: 4px 8px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #142033;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.documents-details-actions button:hover:not(:disabled),
+.documents-editor-actions button:hover:not(:disabled),
+.documents-delete-confirm button:hover:not(:disabled) {
+    background: #1a2a40;
+    border-color: rgba(74, 168, 210, .78);
+}
+
+.documents-details-actions .danger,
+.documents-delete-confirm .danger {
+    border-color: rgba(255, 102, 102, .4);
+    background: rgba(95, 30, 37, .45);
+}
+
+.documents-details-actions .danger:hover:not(:disabled),
+.documents-delete-confirm .danger:hover:not(:disabled) {
+    border-color: rgba(255, 115, 115, .72);
+    background: rgba(120, 35, 43, .62);
+}
+
+.documents-editor-actions .primary {
+    border-color: rgba(54, 231, 165, .42);
+    background: rgba(20, 73, 60, .56);
+}
+
+.documents-editor-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: calc(100% - 34px);
+}
+
+.documents-editor-label {
+    padding: 8px 10px;
+    font-size: 9px;
+    letter-spacing: .12em;
+    opacity: .58;
+    border-bottom: 1px solid rgba(120, 210, 255, .1);
+}
+
+.documents-json-editor {
+    flex: 1 1 auto;
+    min-height: 260px;
+    width: 100%;
+    box-sizing: border-box;
+    resize: none;
+    border: 0;
+    outline: none;
+    padding: 12px;
+    background: #101417;
+    color: inherit;
+    font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.documents-json-editor:focus {
+    box-shadow: inset 0 0 0 1px rgba(62, 154, 194, .45);
+}
+
+.documents-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 7px;
+    padding: 9px 10px;
+    border-top: 1px solid rgba(120, 210, 255, .1);
+}
+
+.documents-delete-confirm {
+    margin: 12px;
+    padding: 14px;
+    border: 1px solid rgba(255, 102, 102, .28);
+    border-radius: 5px;
+    background: rgba(95, 30, 37, .18);
+    font-size: 11px;
+}
+
+.documents-delete-confirm p {
+    margin: 8px 0 14px;
+    opacity: .68;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.documents-delete-confirm > div {
+    display: flex;
+    gap: 7px;
+}
+
+
+/* ---------------------------------------------------------
+   MongoDB aggregation + chart workspace
+   --------------------------------------------------------- */
+.documents-workspace-tabs {
+    display: flex;
+    gap: 2px;
+    min-height: 34px;
+    padding: 0 10px;
+    align-items: end;
+    border-bottom: 1px solid rgba(120, 210, 255, .1);
+    background: rgba(5, 12, 18, .45);
+}
+
+.documents-workspace-tabs button {
+    min-width: 84px;
+    min-height: 30px;
+    padding: 5px 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: inherit;
+    opacity: .58;
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: .04em;
+    cursor: pointer;
+}
+
+.documents-workspace-tabs button:hover:not(:disabled) {
+    opacity: .9;
+    background: rgba(70, 180, 255, .04);
+}
+
+.documents-workspace-tabs button.active {
+    opacity: 1;
+    border-bottom-color: rgba(54, 231, 165, .82);
+    color: #dffdf2;
+}
+
+.documents-workspace-tabs button:disabled {
+    cursor: default;
+    opacity: .25;
+}
+
+.documents-pipeline-editor {
+    min-height: 190px;
+    max-height: 340px;
+}
+
+.aggregation-row {
+    cursor: default;
+}
+
+.documents-chart-workspace {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: auto;
+    padding: 12px;
+    gap: 12px;
+}
+
+.documents-chart-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(120, 210, 255, .11);
+    background: rgba(11, 22, 32, .72);
+    border-radius: 5px;
+}
+
+.documents-chart-toolbar label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 145px;
+    font-size: 9px;
+    letter-spacing: .08em;
+    opacity: .8;
+}
+
+.documents-chart-toolbar select {
+    min-height: 30px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #101a28;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    padding: 4px 7px;
+}
+
+.documents-chart-toolbar > span {
+    margin-left: auto;
+    font-size: 10px;
+    opacity: .5;
+    padding-bottom: 7px;
+}
+
+.documents-chart-card {
+    min-height: 390px;
+    border: 1px solid rgba(120, 210, 255, .11);
+    border-radius: 5px;
+    background: rgba(7, 16, 24, .86);
+    overflow: hidden;
+}
+
+.documents-chart-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(120, 210, 255, .1);
+    font-size: 11px;
+}
+
+.documents-chart-title span {
+    opacity: .55;
+}
+
+.documents-chart-svg {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.chart-axis {
+    stroke: rgba(160, 195, 220, .22);
+    stroke-width: 1;
+}
+
+.chart-bar {
+    fill: rgba(54, 231, 165, .68);
+}
+
+.chart-line {
+    stroke: rgba(87, 191, 255, .9);
+    stroke-width: 3;
+}
+
+.chart-point {
+    fill: #36e7a5;
+    stroke: rgba(4, 15, 22, .9);
+    stroke-width: 2;
+}
+
+.chart-point.scatter {
+    fill: rgba(87, 191, 255, .84);
+}
+
+.chart-scale-label,
+.chart-x-label {
+    fill: rgba(205, 225, 240, .5);
+    font: 10px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.documents-chart-empty {
+    min-height: 320px;
+    display: grid;
+    place-items: center;
+    color: rgba(205, 225, 240, .42);
+    font-size: 11px;
+}
+
+.documents-pie-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(180px, 280px);
+    gap: 18px;
+    align-items: center;
+    padding: 10px 18px 18px;
+}
+
+.documents-chart-svg.pie {
+    max-height: 330px;
+}
+
+.documents-pie-slice {
+    transform-origin: center;
+}
+
+.documents-pie-slice.slice-0 { stroke: #36e7a5; }
+.documents-pie-slice.slice-1 { stroke: #57bfff; }
+.documents-pie-slice.slice-2 { stroke: #f2b84b; }
+.documents-pie-slice.slice-3 { stroke: #d47dff; }
+.documents-pie-slice.slice-4 { stroke: #ff7f7f; }
+.documents-pie-slice.slice-5 { stroke: #7de0d8; }
+
+.documents-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 10px;
+}
+
+.documents-chart-legend > div {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    gap: 7px;
+    align-items: center;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.legend-dot.slice-0 { color: #36e7a5; }
+.legend-dot.slice-1 { color: #57bfff; }
+.legend-dot.slice-2 { color: #f2b84b; }
+.legend-dot.slice-3 { color: #d47dff; }
+.legend-dot.slice-4 { color: #ff7f7f; }
+.legend-dot.slice-5 { color: #7de0d8; }
+
+.documents-chart-source {
+    border: 1px solid rgba(120, 210, 255, .1);
+    border-radius: 5px;
+    background: rgba(6, 13, 19, .68);
+}
+
+.documents-chart-source > strong {
+    display: block;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(120, 210, 255, .08);
+    font-size: 10px;
+}
+
+.documents-chart-source pre {
+    margin: 0;
+    max-height: 180px;
+    overflow: auto;
+    padding: 10px 12px;
+    font: 10px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    white-space: pre-wrap;
+}
+
+.documents-analytics-details {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px 12px;
+    padding: 14px 12px;
+    font-size: 10px;
+}
+
+.documents-analytics-details > strong:first-child,
+.documents-analytics-details > p {
+    grid-column: 1 / -1;
+}
+
+.documents-analytics-details p {
+    margin: 0 0 10px;
+    line-height: 1.55;
+    opacity: .58;
+}
+
+.documents-analytics-details > span {
+    opacity: .48;
+}
+
+@media(max-width: 900px) {
+    .documents-chart-toolbar > span { margin-left: 0; width: 100%; }
+    .documents-pie-layout { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------
+   Saved charts + dashboards
+   --------------------------------------------------------- */
+.documents-chart-savebar {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.3fr) minmax(170px, 1fr) minmax(200px, 1.2fr) auto;
+    gap: 10px;
+    align-items: end;
+    padding: 10px 12px;
+    border: 1px solid rgba(54, 231, 165, .14);
+    border-radius: 5px;
+    background: rgba(9, 30, 27, .35);
+}
+
+.documents-chart-savebar label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 9px;
+    letter-spacing: .07em;
+    opacity: .82;
+}
+
+.documents-chart-savebar input {
+    min-height: 30px;
+    box-sizing: border-box;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #101a28;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    padding: 5px 8px;
+    outline: none;
+}
+
+.documents-chart-savebar input:focus {
+    border-color: rgba(54, 231, 165, .55);
+}
+
+.documents-chart-savebar button,
+.documents-saved-header button,
+.documents-saved-actions button,
+.documents-dashboard-meta button {
+    min-height: 30px;
+    padding: 5px 10px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #142033;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.documents-chart-savebar button:hover:not(:disabled),
+.documents-saved-header button:hover:not(:disabled),
+.documents-saved-actions button:hover:not(:disabled),
+.documents-dashboard-meta button:hover:not(:disabled) {
+    background: #1a2a40;
+    border-color: rgba(74, 168, 210, .78);
+}
+
+.documents-chart-savebar button {
+    border-color: rgba(54, 231, 165, .45);
+    background: rgba(20, 73, 60, .56);
+}
+
+.documents-chart-savebar > span {
+    grid-column: 1 / -1;
+    font-size: 10px;
+    color: rgba(164, 238, 207, .82);
+}
+
+.documents-saved-workspace,
+.documents-dashboard-workspace {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.documents-saved-header,
+.documents-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(120, 210, 255, .11);
+    border-radius: 5px;
+    background: rgba(11, 22, 32, .72);
+}
+
+.documents-saved-header > div,
+.documents-dashboard-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.documents-saved-header span,
+.documents-dashboard-header span {
+    font-size: 10px;
+    opacity: .5;
+}
+
+.documents-dashboard-header select {
+    min-width: 240px;
+    min-height: 31px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #101a28;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    padding: 5px 8px;
+}
+
+.documents-saved-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.documents-saved-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(120, 210, 255, .11);
+    border-radius: 5px;
+    background: rgba(7, 16, 24, .82);
+}
+
+.documents-saved-card > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.documents-saved-card > div:first-child span {
+    font-size: 10px;
+    opacity: .5;
+}
+
+.documents-saved-card dl {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 5px 8px;
+    margin: 0;
+    font-size: 10px;
+}
+
+.documents-saved-card dt {
+    opacity: .45;
+}
+
+.documents-saved-card dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.documents-saved-actions {
+    display: flex;
+    gap: 7px;
+    margin-top: auto;
+}
+
+.documents-saved-actions .danger {
+    border-color: rgba(255, 102, 102, .4);
+    background: rgba(95, 30, 37, .45);
+}
+
+.documents-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 12px;
+}
+
+.documents-dashboard-card {
+    min-width: 0;
+    border: 1px solid rgba(120, 210, 255, .11);
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgba(7, 16, 24, .86);
+}
+
+.documents-dashboard-card .documents-chart-svg {
+    max-height: 280px;
+}
+
+.documents-dashboard-card .documents-chart-empty {
+    min-height: 240px;
+}
+
+.documents-dashboard-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(120, 210, 255, .08);
+    font-size: 10px;
+}
+
+.documents-dashboard-meta span {
+    opacity: .5;
+}
+
+@media (max-width: 1100px) {
+    .documents-chart-savebar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .documents-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
+/* =========================================================
+   Operational dashboard integration
+   ========================================================= */
+.documents-dashboard-selectors {
+    display: flex;
+    align-items: end;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.documents-dashboard-selectors label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 150px;
+    font-size: 9px;
+    letter-spacing: .06em;
+    opacity: .78;
+}
+
+.documents-dashboard-selectors select,
+.documents-dashboard-selectors button {
+    min-height: 31px;
+    border: 1px solid rgba(78, 108, 145, .55);
+    border-radius: 4px;
+    background: #101a28;
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    padding: 5px 8px;
+    box-sizing: border-box;
+}
+
+.documents-dashboard-selectors button {
+    cursor: pointer;
+    padding-inline: 12px;
+}
+
+.documents-dashboard-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.documents-dashboard-kpis > div {
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(54, 231, 165, .13);
+    border-radius: 5px;
+    background: linear-gradient(180deg, rgba(14, 40, 39, .52), rgba(7, 16, 24, .82));
+}
+
+.documents-dashboard-kpis span {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .5;
+}
+
+.documents-dashboard-kpis strong {
+    font-size: 18px;
+    font-weight: 650;
+}
+
+.documents-dashboard-card .documents-chart-title > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.documents-dashboard-card .documents-chart-title small {
+    font-size: 9px;
+    font-weight: 400;
+    opacity: .45;
+}
+
+.documents-system-badge {
+    flex: 0 1 auto;
+    max-width: 48%;
+    padding: 3px 6px;
+    border: 1px solid rgba(54, 231, 165, .22);
+    border-radius: 999px;
+    background: rgba(20, 73, 60, .35);
+    color: rgba(184, 245, 220, .9);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.documents-dashboard-meta > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    min-width: 0;
+    font-size: 9px;
+    opacity: .62;
+}
+
+/* Preserve the validated save-bar layout. */
+.documents-chart-workspace {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+}
+
+.documents-chart-savebar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.documents-chart-savebar label,
+.documents-chart-savebar input {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.documents-chart-savebar label:nth-child(3) { grid-column: 1 / 2 !important; }
+.documents-chart-savebar > button { grid-column: 2 / 3 !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important; align-self: end !important; }
+.documents-chart-savebar > span { grid-column: 1 / -1 !important; }
+
+/* Preserve the validated responsive five-tab layout. */
+.documents-workspace-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    gap: 2px !important;
+    padding: 0 6px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+.documents-workspace-tabs button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 34px !important;
+    padding: 5px 4px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: normal !important;
+    line-height: 1.05 !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+}
+
+@media (max-width: 1450px) {
+    .documents-workspace-tabs button { font-size: 9px !important; letter-spacing: .02em !important; padding-inline: 2px !important; }
+}
+
+@media (max-width: 1200px) {
+    .documents-dashboard-header { align-items: flex-start; flex-direction: column; }
+    .documents-dashboard-selectors { width: 100%; justify-content: stretch; }
+    .documents-dashboard-selectors label { flex: 1 1 180px; }
+    .documents-dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .documents-workspace-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; grid-auto-rows: 32px !important; }
+    .documents-workspace-tabs button { min-height: 32px !important; }
+}
+
+@media (max-width: 900px) {
+    .documents-chart-savebar { grid-template-columns: 1fr !important; }
+    .documents-chart-savebar label,
+    .documents-chart-savebar label:nth-child(3),
+    .documents-chart-savebar > button,
+    .documents-chart-savebar > span { grid-column: 1 !important; }
+    .documents-dashboard-kpis { grid-template-columns: 1fr 1fr; }
+}
+
+/* =========================================================
+   FINAL DASHBOARD 100% ZOOM / WIDTH FIX
+   ========================================================= */
+
+/* Never allow Dashboard mode to create horizontal scrolling */
+.documents-dashboard-workspace {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* Dashboard heading + controls */
+.documents-dashboard-header {
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(260px, 1.25fr) !important;
+
+    align-items: end !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    gap: 12px !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/*
+ * Override the older:
+ * .documents-dashboard-header > div {
+ *   flex-direction: column;
+ * }
+ */
+.documents-dashboard-header > div {
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+
+/* Right-side dashboard selectors */
+.documents-dashboard-header .documents-dashboard-selectors {
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        auto !important;
+
+    align-items: end !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    gap: 8px !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* Individual selector fields */
+.documents-dashboard-selectors label {
+    display: flex !important;
+    flex-direction: column !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+}
+
+
+/*
+ * Critical override:
+ * old CSS forces select min-width:240px
+ */
+.documents-dashboard-header select,
+.documents-dashboard-selectors select {
+    width: 100% !important;
+
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* Refresh button stays inside workspace */
+.documents-dashboard-selectors button {
+    width: auto !important;
+    min-width: 76px !important;
+    max-width: 100px !important;
+
+    white-space: nowrap !important;
+}
+
+
+/* KPI cards must also be allowed to shrink */
+.documents-dashboard-kpis {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr)) !important;
+
+    box-sizing: border-box !important;
+}
+
+.documents-dashboard-kpis > div {
+    min-width: 0 !important;
+    overflow: hidden !important;
+}
+
+
+/* Dashboard chart cards */
+.documents-dashboard-grid {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(260px, 1fr)) !important;
+
+    box-sizing: border-box !important;
+}
+
+.documents-dashboard-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+
+    box-sizing: border-box !important;
+}
+
+
+/* Do not allow SVG/chart internals to establish page width */
+.documents-dashboard-card svg,
+.documents-dashboard-card .documents-chart-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+
+/* ---------------------------------------------------------
+   Normal laptop / constrained center panel
+   --------------------------------------------------------- */
+
+@media (max-width: 1450px) {
+
+    .documents-dashboard-header {
+        grid-template-columns: 1fr !important;
+        align-items: stretch !important;
+    }
+
+    .documents-dashboard-header .documents-dashboard-selectors {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .documents-dashboard-selectors button {
+        width: 100% !important;
+        max-width: none !important;
+
+        grid-column: 1 / -1 !important;
+    }
+
+    .documents-dashboard-kpis {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+
+/* Very narrow center workspace */
+@media (max-width: 1000px) {
+
+    .documents-dashboard-header .documents-dashboard-selectors {
+        grid-template-columns: 1fr !important;
+    }
+
+    .documents-dashboard-selectors button {
+        grid-column: 1 !important;
+    }
+}

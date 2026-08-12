@@ -11,13 +11,15 @@ import type {
 
 import "./EesSystemsPanel.css";
 
+import DatasetViewer from "./DatasetViewer";
+
 interface EesSystemsPanelProps {
   systems: EesSystem[];
 
   datasets: EesDataset[];
 
   overview:
-    RegistryOverview | null;
+  RegistryOverview | null;
 
   loading: boolean;
 
@@ -26,6 +28,10 @@ interface EesSystemsPanelProps {
   onRefresh: () => void;
 
   onOpenDatabase: (
+    system: EesSystem,
+  ) => void;
+
+  onOpenDashboard: (
     system: EesSystem,
   ) => void;
 }
@@ -38,7 +44,13 @@ export default function EesSystemsPanel({
   error,
   onRefresh,
   onOpenDatabase,
+  onOpenDashboard,
 }: EesSystemsPanelProps) {
+  const [
+    selectedDataset,
+    setSelectedDataset,
+  ] = useState<EesDataset | null>(null);
+
   const [
     selectedSystemId,
     setSelectedSystemId,
@@ -66,10 +78,10 @@ export default function EesSystemsPanel({
       () =>
         selectedSystem
           ? datasets.filter(
-              (dataset) =>
-                dataset.system_id ===
-                selectedSystem.system_id,
-            )
+            (dataset) =>
+              dataset.system_id ===
+              selectedSystem.system_id,
+          )
           : [],
       [
         datasets,
@@ -80,10 +92,11 @@ export default function EesSystemsPanel({
   function handleSystemClick(
     system: EesSystem,
   ) {
+    setSelectedDataset(null);
     setSelectedSystemId(
       (current) =>
         current ===
-        system.system_id
+          system.system_id
           ? null
           : system.system_id,
     );
@@ -172,7 +185,7 @@ export default function EesSystemsPanel({
       <div className="ees-systems-content">
         <section className="ees-system-grid">
           {loading &&
-          systems.length ===
+            systems.length ===
             0 ? (
             <div className="ees-system-empty">
               Loading EES systems...
@@ -203,11 +216,10 @@ export default function EesSystemsPanel({
                       system.system_id
                     }
                     type="button"
-                    className={`ees-system-card ${
-                      selected
-                        ? "selected"
-                        : ""
-                    }`}
+                    className={`ees-system-card ${selected
+                      ? "selected"
+                      : ""
+                      }`}
                     onClick={() =>
                       handleSystemClick(
                         system,
@@ -388,17 +400,22 @@ export default function EesSystemsPanel({
                 />
 
                 {selectedSystem.primary_database && (
-                  <button
-                    type="button"
-                    className="ees-open-db-button"
-                    onClick={() =>
-                      onOpenDatabase(
-                        selectedSystem,
-                      )
-                    }
-                  >
-                    Open Database Connection
-                  </button>
+                  <div className="ees-system-actions">
+                    <button
+                      type="button"
+                      onClick={() => onOpenDatabase(selectedSystem)}
+                    >
+                      Open Database
+                    </button>
+
+                    <button
+                      type="button"
+                      className="ees-system-dashboard-button"
+                      onClick={() => onOpenDashboard(selectedSystem)}
+                    >
+                      ◫ Open Data Dashboard
+                    </button>
+                  </div>
                 )}
               </section>
 
@@ -408,7 +425,7 @@ export default function EesSystemsPanel({
                 </div>
 
                 {selectedDatasets.length ===
-                0 ? (
+                  0 ? (
                   <div className="ees-no-datasets">
                     No datasets
                     registered for this
@@ -420,11 +437,24 @@ export default function EesSystemsPanel({
                       (
                         dataset,
                       ) => (
-                        <div
+                        <button
                           key={
                             dataset.dataset_id
                           }
+                          type="button"
                           className="ees-dataset-card"
+                          onClick={() =>
+                            setSelectedDataset(dataset)
+                          }
+                          disabled={
+                            !dataset.schema_name ||
+                            !dataset.object_name
+                          }
+                          title={
+                            dataset.schema_name && dataset.object_name
+                              ? `View ${dataset.schema_name}.${dataset.object_name}`
+                              : "Dataset does not have a browsable schema/object mapping."
+                          }
                         >
                           <div className="ees-dataset-card-heading">
                             <strong>
@@ -470,7 +500,10 @@ export default function EesSystemsPanel({
                               }
                             </span>
                           </div>
-                        </div>
+                          <span className="ees-dataset-view-hint">
+                            View dataset →
+                          </span>
+                        </button>
                       ),
                     )}
                   </div>
@@ -494,6 +527,13 @@ export default function EesSystemsPanel({
           </aside>
         )}
       </div>
+
+      {selectedDataset && (
+        <DatasetViewer
+          dataset={selectedDataset}
+          onClose={() => setSelectedDataset(null)}
+        />
+      )}
     </div>
   );
 }

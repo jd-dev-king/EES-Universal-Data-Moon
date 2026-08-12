@@ -899,3 +899,42 @@
     padding: 12px;
   }
 }
+/* ============================================================
+   CLICKABLE REGISTERED DATASETS
+   ============================================================ */
+
+button.ees-dataset-card {
+  width: 100%;
+  display: block;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+}
+
+button.ees-dataset-card:hover {
+  border-color: #49627f;
+  background: #121d29;
+}
+
+button.ees-dataset-card:focus-visible {
+  outline: 1px solid #6685aa;
+  outline-offset: 2px;
+}
+
+button.ees-dataset-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ees-dataset-view-hint {
+  display: block;
+  margin-top: 7px;
+  color: #7892b2;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: right;
+  text-transform: uppercase;
+}

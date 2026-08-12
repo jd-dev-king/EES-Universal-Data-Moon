@@ -27,12 +27,13 @@ const initialForm: DatabaseConnectionForm = {
   type: "postgresql",
   method: "host",
 
-  name: "",
+  name: "EES Data Platform Admin",
 
   host: "localhost",
   port: "5432",
-  database: "",
-  username: "",
+
+  database: "ees_data_platform",
+  username: "jeremiahlupton",
   password: "",
 
   connectionUrl: "",
@@ -301,6 +302,9 @@ if (!formValid) {
               <span className="method-label">
                 Connection Method
               </span>
+              <p className="connection-helper-text">
+                    Private EES Data Platform administration connection. Use this mode only for local maintenance, imports, and authorized database changes.
+                </p>
 
               <div className="method-options">
                 <label>
@@ -343,11 +347,16 @@ if (!formValid) {
                   updateField("name", event.target.value)
                 }
               />
+
+
             </label>
 
             <div className="section-divider">
               CONNECTION
             </div>
+            <p className="connection-helper-text">
+                Admin credentials are used only for this session. Passwords are not prefilled or written to source control.
+              </p>
 
             {form.method === "host" ? (
               <>
@@ -422,6 +431,10 @@ if (!formValid) {
                 <label className="field">
                   <span>Password</span>
 
+                  <p className="connection-helper-text">
+                        Enter the database password manually. It is intentionally not included in the application source.
+                    </p>
+
                   <div className="password-field">
                     <input
                       type={
@@ -436,6 +449,7 @@ if (!formValid) {
                         )
                       }
                     />
+
 
                     <button
                       type="button"

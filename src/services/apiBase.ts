@@ -1,7 +1,10 @@
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL ??
-  "http://127.0.0.1:8000"
+  "http://localhost:8000"
 ).replace(/\/$/, "");
+
+export const MANAGED_EES_API_BASE_URL =
+  `${API_BASE_URL}/api`;
 
 export const IS_GITHUB_PAGES =
   typeof window !== "undefined" &&
