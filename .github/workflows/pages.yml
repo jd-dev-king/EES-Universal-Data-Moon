@@ -36,7 +36,19 @@ jobs:
         run: npm ci
 
       - name: Build Universal Data Moon
+        env:
+          # Production must target Railway. Do not allow the static GitHub
+          # Pages build to inherit the localhost development fallback.
+          VITE_API_BASE_URL: https://ees-universal-data-moon-api-production.up.railway.app
         run: npm run build
+
+      - name: Verify production API target
+        run: |
+          if grep -R "http://localhost:8000" dist/assets; then
+            echo "ERROR: production bundle contains localhost API target"
+            exit 1
+          fi
+          grep -R "ees-universal-data-moon-api-production.up.railway.app" dist/assets >/dev/null
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

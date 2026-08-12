@@ -36,6 +36,8 @@ allowed_origins = [
         "http://127.0.0.1:1420,"
         "http://localhost:5173,"
         "http://127.0.0.1:5173,"
+        "http://localhost:4173,"
+        "http://127.0.0.1:4173,"
         "https://jd-dev-king.github.io,"
         "https://ees-jdl.com,"
         "https://www.ees-jdl.com,"

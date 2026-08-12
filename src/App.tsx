@@ -2258,7 +2258,7 @@ LIMIT ${settings.resultRowLimit};`,
         </aside>
 
 
-        <main className="main-workspace">
+        <main className={`main-workspace${isPublicWebBuild ? " public-web-workspace" : ""}`}>
           {isPublicWebBuild && (
             <div className="public-web-banner">
               <strong>PUBLIC DATA MOON</strong>
