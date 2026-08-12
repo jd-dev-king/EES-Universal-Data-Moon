@@ -1,4 +1,4 @@
-name: Deploy Data Moon
+name: Deploy project page
 
 on:
   push:
@@ -35,29 +35,38 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Universal Data Moon
+      - name: Build GitHub Pages production app
         env:
-          # Production must target Railway. Do not allow the static GitHub
-          # Pages build to inherit the localhost development fallback.
+          GITHUB_ACTIONS: "true"
           VITE_API_BASE_URL: https://ees-universal-data-moon-api-production.up.railway.app
         run: npm run build
 
       - name: Verify production API target
         run: |
-          if grep -R "http://localhost:8000" dist/assets; then
-            echo "ERROR: production bundle contains localhost API target"
+          if ! grep -R -q "https://ees-universal-data-moon-api-production.up.railway.app" dist/assets; then
+            echo "ERROR: Railway production API URL is missing from production bundle"
             exit 1
           fi
-          grep -R "ees-universal-data-moon-api-production.up.railway.app" dist/assets >/dev/null
+
+          echo "PASS: Railway production API target found"
+
+      - name: Verify GitHub Pages asset paths
+        run: |
+          if ! grep -q "/EES-Universal-Data-Moon/assets/" dist/index.html; then
+            echo "ERROR: GitHub Pages base path is missing"
+            exit 1
+          fi
+
+          echo "PASS: GitHub Pages asset base path verified"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload Pages artifact
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: dist
 
-      - name: Deploy
+      - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
