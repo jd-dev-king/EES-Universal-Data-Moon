@@ -322,6 +322,11 @@ FROM your_table;`;
   ] = useState<ResultView>("results");
 
   const [
+    activeStatementResultIndex,
+    setActiveStatementResultIndex,
+  ] = useState(0);
+
+  const [
     queryRunning,
     setQueryRunning,
   ] = useState(false);
@@ -333,6 +338,59 @@ FROM your_table;`;
     useState<string | null>(
       null,
     );
+
+  type StatementResult = {
+    command?: string;
+    statement_type?: string;
+    columns?: string[];
+    rows?: unknown[][];
+    row_count?: number;
+    affected?: number;
+    message?: string | null;
+  };
+
+  type MultiStatementQueryResult = QueryRunResponse & {
+    statements_executed?: number;
+    total_affected?: number;
+    results?: StatementResult[];
+  };
+
+  const multiStatementQueryResult =
+    queryResult as MultiStatementQueryResult | null;
+
+  const statementResults =
+    Array.isArray(multiStatementQueryResult?.results)
+      ? multiStatementQueryResult.results
+      : [];
+
+  const hasStatementResults =
+    statementResults.length > 0;
+
+  const activeStatementResult =
+    hasStatementResults
+      ? statementResults[
+          Math.min(
+            activeStatementResultIndex,
+            statementResults.length - 1,
+          )
+        ]
+      : null;
+
+  const displayedColumns: string[] =
+    activeStatementResult?.columns ??
+    queryResult?.columns ??
+    [];
+
+  const displayedRows: unknown[][] =
+    activeStatementResult?.rows ??
+    queryResult?.rows ??
+    [];
+
+  const displayedRowCount =
+    activeStatementResult?.row_count ??
+    activeStatementResult?.affected ??
+    queryResult?.row_count ??
+    0;
 
 
   /*
@@ -1294,6 +1352,7 @@ FROM your_table;`;
       setQueryResult(
         result,
       );
+      setActiveStatementResultIndex(0);
       setResultView("results");
 
       const historyEntry =
@@ -1359,6 +1418,256 @@ FROM your_table;`;
         false,
       );
     }
+  }
+
+
+  function buildResultFilename(
+    extension: "csv" | "json",
+  ) {
+    const timestamp =
+      new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-");
+
+    return `data-moon-result-${activeStatementResultIndex + 1}-${timestamp}.${extension}`;
+  }
+
+
+  function downloadResultFile(
+    content: string,
+    filename: string,
+    mimeType: string,
+  ) {
+    const blob = new Blob(
+      [content],
+      {
+        type: mimeType,
+      },
+    );
+
+    const url =
+      URL.createObjectURL(blob);
+
+    const anchor =
+      document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = filename;
+
+    document.body.appendChild(
+      anchor,
+    );
+
+    anchor.click();
+    anchor.remove();
+
+    URL.revokeObjectURL(
+      url,
+    );
+  }
+
+
+  function csvEscape(
+    value: unknown,
+  ) {
+    if (
+      value === null ||
+      value === undefined
+    ) {
+      return "";
+    }
+
+    const text =
+      typeof value === "object"
+        ? JSON.stringify(value)
+        : String(value);
+
+    return `"${text.replace(
+      /"/g,
+      '""',
+    )}"`;
+  }
+
+
+  function buildResultRecords() {
+    return displayedRows.map(
+      (row) =>
+        Object.fromEntries(
+          displayedColumns.map(
+            (column, index) => [
+              column,
+              row[index] ?? null,
+            ],
+          ),
+        ),
+    );
+  }
+
+
+  function handleSaveResult() {
+    if (
+      displayedColumns.length === 0
+    ) {
+      setQueryMessage(
+        "There is no result set to save.",
+      );
+
+      return;
+    }
+
+    const defaultName =
+      `Result ${activeStatementResultIndex + 1} - ${new Date().toLocaleString()}`;
+
+    const requestedName =
+      window.prompt(
+        "Name this saved result:",
+        defaultName,
+      );
+
+    if (
+      requestedName === null
+    ) {
+      return;
+    }
+
+    const name =
+      requestedName.trim() ||
+      defaultName;
+
+    try {
+      const storageKey =
+        "ees-data-moon-saved-results";
+
+      const rawExisting =
+        window.localStorage.getItem(
+          storageKey,
+        );
+
+      const existing: unknown =
+        rawExisting
+          ? JSON.parse(rawExisting)
+          : [];
+
+      const savedResults =
+        Array.isArray(existing)
+          ? existing
+          : [];
+
+      const savedResult = {
+        id:
+          typeof crypto !== "undefined" &&
+          "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name,
+        savedAt:
+          new Date().toISOString(),
+        connectionName:
+          activeConnection?.name ?? null,
+        databaseName:
+          catalog?.database ??
+          activeConnection?.database ??
+          null,
+        sql,
+        resultIndex:
+          activeStatementResultIndex,
+        command:
+          activeStatementResult?.command ??
+          activeStatementResult?.statement_type ??
+          null,
+        columns:
+          displayedColumns,
+        rows:
+          displayedRows,
+        rowCount:
+          displayedRowCount,
+        durationMs:
+          queryResult?.duration_ms ?? null,
+      };
+
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify(
+          [
+            savedResult,
+            ...savedResults,
+          ].slice(0, 50),
+        ),
+      );
+
+      setQueryMessage(
+        `Saved result "${name}" locally.`,
+      );
+    } catch (error) {
+      setQueryMessage(
+        error instanceof Error
+          ? `Unable to save result: ${error.message}`
+          : "Unable to save result.",
+      );
+    }
+  }
+
+
+  function handleExportCsv() {
+    if (
+      displayedColumns.length === 0
+    ) {
+      setQueryMessage(
+        "There is no result set to export.",
+      );
+
+      return;
+    }
+
+    const csv = [
+      displayedColumns
+        .map(csvEscape)
+        .join(","),
+
+      ...displayedRows.map(
+        (row) =>
+          row
+            .map(csvEscape)
+            .join(","),
+      ),
+    ].join("\n");
+
+    downloadResultFile(
+      csv,
+      buildResultFilename("csv"),
+      "text/csv;charset=utf-8",
+    );
+
+    setQueryMessage(
+      "Result exported as CSV.",
+    );
+  }
+
+
+  function handleExportJson() {
+    if (
+      displayedColumns.length === 0
+    ) {
+      setQueryMessage(
+        "There is no result set to export.",
+      );
+
+      return;
+    }
+
+    downloadResultFile(
+      JSON.stringify(
+        buildResultRecords(),
+        null,
+        2,
+      ),
+      buildResultFilename("json"),
+      "application/json;charset=utf-8",
+    );
+
+    setQueryMessage(
+      "Result exported as JSON.",
+    );
   }
 
 
@@ -2571,34 +2880,101 @@ LIMIT ${settings.resultRowLimit};`,
 
                   <span className="result-summary">
                     {queryResult?.success
-                      ? `${queryResult.row_count} rows • ${queryResult.duration_ms} ms`
+                      ? `${displayedRowCount} rows • ${queryResult.duration_ms} ms`
                       : "0 rows"}
                   </span>
                 </div>
 
                 {resultView === "results" ? (
-                  queryResult?.success && queryResult.columns.length > 0 ? (
-                    <div className="results-table-wrap">
-                      <table className="results-table">
-                        <thead>
-                          <tr>
-                            {queryResult.columns.map((column) => (
-                              <th key={column}>{column}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queryResult.rows.map((row, rowIndex) => (
-                            <tr key={rowIndex}>
-                              {row.map((value, columnIndex) => (
-                                <td key={`${rowIndex}-${columnIndex}`}>
-                                  {value === null ? "NULL" : String(value)}
-                                </td>
+                  queryResult?.success && displayedColumns.length > 0 ? (
+                    <div className="results-content">
+                      <div className="result-actions">
+                        <div className="result-actions-left">
+                          {hasStatementResults && statementResults.length > 1 ? (
+                            <select
+                              className="result-selector"
+                              value={activeStatementResultIndex}
+                              onChange={(event) =>
+                                setActiveStatementResultIndex(
+                                  Number(event.target.value),
+                                )
+                              }
+                              aria-label="Select statement result"
+                            >
+                              {statementResults.map((item, index) => (
+                                <option key={index} value={index}>
+                                  Result {index + 1} — {item.command ?? item.statement_type ?? "SQL"} — {item.row_count ?? item.affected ?? 0} rows
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="result-set-label">
+                              Result 1
+                            </span>
+                          )}
+
+                          <span className="result-row-count">
+                            {displayedRowCount} rows
+                          </span>
+                        </div>
+
+                        <div className="result-actions-right">
+                          <button
+                            type="button"
+                            onClick={handleSaveResult}
+                            title="Save the current result locally in Data Moon"
+                          >
+                            Save Result
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleExportCsv}
+                            title="Download the current result as CSV"
+                          >
+                            CSV
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleExportJson}
+                            title="Download the current result as JSON"
+                          >
+                            JSON
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="results-table-wrap">
+                        <table className="results-table">
+                          <thead>
+                            <tr>
+                              {displayedColumns.map((column, columnIndex) => (
+                                <th key={`${column}-${columnIndex}`}>{column}</th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {displayedRows.map((row, rowIndex) => (
+                              <tr key={rowIndex}>
+                                {displayedColumns.map((_, columnIndex) => {
+                                  const value = row[columnIndex];
+
+                                  return (
+                                    <td key={`${rowIndex}-${columnIndex}`}>
+                                      {value === null || value === undefined
+                                        ? "NULL"
+                                        : typeof value === "object"
+                                          ? JSON.stringify(value)
+                                          : String(value)}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   ) : queryMessage ? (
                     <div className={queryResult?.success === false ? "query-message error" : "query-message"}>
