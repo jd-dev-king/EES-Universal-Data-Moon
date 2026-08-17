@@ -25,7 +25,7 @@ load_dotenv(ENV_FILE)
 
 app = FastAPI(
     title="EES Universal Data Moon API",
-    version="1.0.0",
+    version="1.0.2",
 )
 
 allowed_origins = [
