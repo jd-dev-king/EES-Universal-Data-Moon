@@ -31,6 +31,8 @@ import AiAssistant from "./features/ai/AiAssistant";
 import EesSystemsPanel from "./features/systems/EesSystemsPanel";
 import DocumentsPanel from "./features/documents/DocumentsPanel";
 import AdminLoginDialog from "./features/admin/AdminLoginDialog";
+import AdminDemoControlPanel from "./features/admin/AdminDemoControlPanel";
+import AdminTableEditor from "./features/admin/AdminTableEditor";
 import { adminLogout, getAdminSession, runManagedAdminQuery } from "./services/adminApi";
 
 import {
@@ -128,6 +130,10 @@ function App() {
 
   const [adminLoginOpen, setAdminLoginOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<string | null>(null);
+  const [adminDemoOpen, setAdminDemoOpen] = useState(false);
+  const [adminTableEditorOpen, setAdminTableEditorOpen] = useState(false);
+  const [adminEditorTarget, setAdminEditorTarget] = useState<{schemaName:string;tableName:string} | null>(null);
+  const [catalogRefreshing, setCatalogRefreshing] = useState(false);
 
   useEffect(() => {
     if (!managedEesMode) return;
@@ -135,6 +141,32 @@ function App() {
       setAdminUser(session.authenticated ? (session.username ?? "admin") : null);
     }).catch(() => setAdminUser(null));
   }, [managedEesMode]);
+
+  function openAdminTableEditor() {
+    if (selectedObject) {
+      setAdminEditorTarget({
+        schemaName: selectedObject.schemaName,
+        tableName: selectedObject.objectName,
+      });
+      setAdminTableEditorOpen(true);
+      return;
+    }
+
+    const requested = window.prompt(
+      "Enter the PostgreSQL table as schema.table (example: public.bulk_tanks)",
+      "public.bulk_tanks",
+    );
+    if (!requested) return;
+
+    const [schemaName, tableName, ...extra] = requested.trim().split(".");
+    if (!schemaName || !tableName || extra.length) {
+      setQueryMessage("Enter a table as schema.table, for example public.bulk_tanks.");
+      return;
+    }
+
+    setAdminEditorTarget({ schemaName, tableName });
+    setAdminTableEditorOpen(true);
+  }
 
   async function handleAdminLogout() {
     await adminLogout();
@@ -920,6 +952,28 @@ FROM your_table;`;
     );
   }
 
+
+  async function handleRefreshDatabaseCatalog() {
+    if (!activeConnection) return;
+    try {
+      setCatalogRefreshing(true);
+      setConnectionError(null);
+      const refreshed = activeConnection.name === MANAGED_EES_CONNECTION.name
+        ? await loadManagedCatalog()
+        : await loadPostgresCatalog(activeConnection);
+      setCatalog(refreshed);
+      setMetadataCache({});
+      metadataCacheRef.current = {};
+      metadataRequestsRef.current.clear();
+      setSelectedObject(null);
+      setObjectMetadata(null);
+      setQueryMessage("Database catalog refreshed. Schema/table changes are now visible without a browser reload.");
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : "Unable to refresh database catalog.");
+    } finally {
+      setCatalogRefreshing(false);
+    }
+  }
 
   /*
    * ------------------------------------------------------------
@@ -2798,6 +2852,26 @@ LIMIT ${settings.resultRowLimit};`,
                 </button>
 
 
+                {adminUser && activeConnection?.name === MANAGED_EES_CONNECTION.name && (
+                  <>
+                    <div className="toolbar-divider" />
+                    <button type="button" onClick={() => void handleRefreshDatabaseCatalog()} disabled={catalogRefreshing}>
+                      {catalogRefreshing ? "Refreshing..." : "↻ Refresh DB"}
+                    </button>
+                    <button type="button" onClick={() => setAdminDemoOpen(true)}>
+                      Demo Admin
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-edit-table-button"
+                      onClick={openAdminTableEditor}
+                      title="Open the Admin Table Editor. Select a table first or enter schema.table."
+                    >
+                      Edit Table
+                    </button>
+                  </>
+                )}
+
                 <div className="query-context">
                   PostgreSQL
 
@@ -2919,6 +2993,23 @@ LIMIT ${settings.resultRowLimit};`,
                         </div>
 
                         <div className="result-actions-right">
+                          {adminUser && activeConnection?.name === MANAGED_EES_CONNECTION.name && (
+                            <button type="button" onClick={() => void handleRefreshDatabaseCatalog()} title="Refresh schemas, tables, views, and metadata without reloading the browser">
+                              Refresh DB
+                            </button>
+                          )}
+
+                          {adminUser && selectedObject && activeConnection?.name === MANAGED_EES_CONNECTION.name && (
+                            <button
+                              type="button"
+                              className="admin-edit-table-button"
+                              onClick={openAdminTableEditor}
+                              title={`Edit ${selectedObject.schemaName}.${selectedObject.objectName} directly in Admin Mode`}
+                            >
+                              Edit Table
+                            </button>
+                          )}
+
                           <button
                             type="button"
                             onClick={handleSaveResult}
@@ -3024,6 +3115,15 @@ LIMIT ${settings.resultRowLimit};`,
                   </div>
                 )}
               </section>
+
+              {adminUser && selectedObject && objectMetadata?.object_type === "table" && (
+                <div className="object-admin-edit-bar">
+                  <span>Admin Mode · {selectedObject.schemaName}.{selectedObject.objectName}</span>
+                  <button type="button" onClick={openAdminTableEditor}>
+                    Edit Table
+                  </button>
+                </div>
+              )}
 
               {selectedObject &&
                 (
@@ -3147,6 +3247,21 @@ LIMIT ${settings.resultRowLimit};`,
         </span>
       </footer>
 
+
+      <AdminDemoControlPanel
+        open={adminDemoOpen}
+        onClose={() => setAdminDemoOpen(false)}
+      />
+
+      <AdminTableEditor
+        open={adminTableEditorOpen}
+        schemaName={adminEditorTarget?.schemaName ?? selectedObject?.schemaName ?? null}
+        tableName={adminEditorTarget?.tableName ?? selectedObject?.objectName ?? null}
+        onClose={() => setAdminTableEditorOpen(false)}
+        onChanged={async () => {
+          await handleRefreshDatabaseCatalog();
+        }}
+      />
 
       <AdminLoginDialog
         open={adminLoginOpen}
